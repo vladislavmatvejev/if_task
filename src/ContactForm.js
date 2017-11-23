@@ -3,114 +3,136 @@ import _ from 'lodash';
 import ContactFormInputItem from './ContactFormInputItem';
 import ContactFormAddressItem from './ContactFormAddressItem';
 import ContactFormDropdownItem from './ContactFormDropdownItem';
-import ContactFormButtonItem from './ContactFormButtonItem'
+import ContactFormButtonItem from './ContactFormButtonItem';
+import formDataSet from './formDataSet.json';
+
+function setInitialValues(data) {
+    return data.filter(fields => fields.field && fields.type !== 'button')
+        .map(field => {
+            return field.field === 'address-person' || field.field === 'physical-address' ?
+                {[field.field]: {value: {address: '', alevik: '', city: ''}}} :
+                {[field.field]: {value: '' || field.defaultValue}};
+        });
+}
+
+function setInitialStateForRequired(data) {
+    return data.map(field => {
+        return {[field.field]:
+            {
+                isValid: !field._isRequired ,
+                validationType: field.validation ? field.validation : null
+            }
+        };
+    })
+}
+
+function getRequiredFields(data) {
+    return data
+        .filter(required => required._isRequired)
+        .map(field => {
+            return field.field;
+        });
+}
 
 export default class ContactForm extends Component {
     constructor(){
         super();
-        const data = [
-            {
-                field: 'fullname',
-                title: 'Ees- ja perenimi',
-                type: 'text',
-                _isRequired: true,
-                validation: 'yes'
-            },
-            {
-                field: 'phone-number',
-                title: 'Telefon',
-                type: 'text',
-                _isRequired: true
-            },
-            {
-                field: 'email',
-                title: 'E-post',
-                type: 'text',
-                _isRequired: true
-            },
-            {
-                field: 'address-person',
-                type: 'address',
-                _isRequired: true
-            },
-            {
-                field: 'different-address',
-                type: 'radio',
-                options: [
-                    {
-                        text: 'Kohaletometamine sama aadressile',
-                        value: false
-                    },
-                    {
-                        text: 'Kohaletometamine erinevale aadressile',
-                        value: true
-                    }
-                ],
-                _isRequired: true,
-                conditional: ['physical-address'],
-                defaultValue: false
-            },
-            {
-                field: 'physical-address',
-                type: 'address',
-                _isRequired: true,
-                isHidden: true
-            },
-            {
-                field: 'terms',
-                type: 'checkbox',
-                options: [
-                    {
-                        text: 'Olen tingimustega tutvunud',
-                        value: true
-                    }
-                ],
-                _isRequired: true,
-                defaultValue: false
-            },
-            {
-                field: 'saveBtn',
-                title: 'Salvesta',
-                type: 'button',
-                validation: 'yes'
-            }
-        ];
+        const data = JSON.parse(JSON.stringify(formDataSet));
 
         this.state = {
             formData: _.clone(data),
-            hiddenFields: this.getHiddenFields(data),
-            requiredFields: this.getRequiredFields(data),
-            isHidden: false
+            requiredFields: getRequiredFields(data),
+            values: setInitialValues(data),
+            isHidden: false,
+            fieldValidation: setInitialStateForRequired(data),
+            isFormValid: false
         };
-        this.isFieldHidden = this.isFieldHidden.bind(this);
     }
 
-    getHiddenFields(data) {
-        return data.filter(hidden => hidden.isHidden);
+    checkIfFormIsValid() {
+        console.log(this.state.fieldValidation);
+        return this.state.fieldValidation;
     }
 
-    getRequiredFields(data) {
-        return data.filter(required => required._isRequired);
+    changeValidationStatus = (fieldName, fieldValue, fieldStatus) => {
+        let fieldVal = fieldValue !== '';
+        let isValid = typeof(fieldStatus) !== 'undefined' ? fieldStatus : fieldVal;
+        return this.state.fieldValidation.map(field => {
+            return _.has(field, fieldName) ?
+                {
+                    [fieldName]:
+                        {
+                            isValid: isValid,
+                            validationType: this.getValidationTypeByFieldName(fieldName)
+                        }
+                } : field;
+        });
+    };
+
+    getValidationTypeByFieldName(fieldName) {
+        return this.state.fieldValidation.find(field => {
+            return _.has(field, fieldName);
+        })[fieldName].validationType;
     }
 
-    isFieldHiddenHere(item) {
-        return this.state.hiddenFields.find(field => field.field === item.field);
+    getValidationSiblingByFieldName(fieldName) {
+        let siblingField = this.getValidationTypeByFieldName(fieldName) !== null ?
+            this.getValidationTypeByFieldName(fieldName)[1].siblingField : null;
+        return siblingField;
     }
 
-    handleChangeValue = e => this.setState(
+    getFieldValidationStatusByName(fieldName) {
+        return !this.state.fieldValidation.find(field => {
+            return _.has(field, fieldName);
+        })[fieldName].isValid;
+    }
+
+    getFieldByName(fieldName) {
+        return this.state.formData.find(field => field.field === fieldName);
+    }
+
+    getValueByFieldName(fieldName) {
+        return this.state.values.find(field => {
+            return field[fieldName]
+        })[fieldName];
+    }
+
+    updateStateObject(fieldName, fieldValue) {
+        return this.state.values.map(fields => {
+            return _.has(fields, fieldName) ?
+                {[fieldName]: {value: fieldValue}} :
+                fields;
+        });
+    }
+
+    isFieldRequired(fieldName) {
+        return _.includes(this.state.requiredFields, fieldName);
+    };
+
+    handleChangeValue = (fieldValue, fieldName) => {
+        let newState = this.updateStateObject(fieldName, fieldValue);
+        this.setState(
             {
-                isHidden: e.target.value
+                isHidden: fieldName === 'terms' ? this.state.isHidden : JSON.parse(fieldValue),
+                values: newState
             }
         );
-    isFieldHidden(hidden) {
-        this.setState({ isHidden: hidden });
-        console.log('hidden ', this.state.isHidden);
     };
+    handleChangeInput = (fieldValue, fieldName, validStatus) => {
+        let newValueState = this.updateStateObject(fieldName, fieldValue);
+        let newValidationState = this.changeValidationStatus(fieldName, fieldValue, validStatus);
+        this.setState(
+            {
+                values: newValueState,
+                fieldValidation: newValidationState
+            }
+            );
+    };
+
     render() {
-        console.log('state', this.state);
-        var data = this.state.formData || "";
-        let hiddenField = data.isHidden || false;
-        var menuContent;
+        this.checkIfFormIsValid();
+        let data = this.state.formData || "";
+        let menuContent;
         if (data.length === 0) {
             menuContent = (
                 <div>
@@ -123,27 +145,63 @@ export default class ContactForm extends Component {
             menuContent = data.map((inputRow, index) =>
                 {
                     let field = inputRow.field;
+                    let sibling = this.getValidationSiblingByFieldName(field);
+                    let siblindStatus = sibling ? this.getFieldValidationStatusByName(sibling) : null;
+                    let validationStatus = this.getFieldValidationStatusByName(field);
+                    let required = siblindStatus !== null ?
+                        siblindStatus :
+                        validationStatus;
+                    //console.log(field, required, siblindStatus);
                     switch (inputRow.type) {
                         case "text" :
-                            return <ContactFormInputItem data={inputRow} key={field} />;
-                        case "address" :
-                            return !this.isFieldHiddenHere(inputRow.field) && this.state.isHidden ?
-                                [<ContactFormAddressItem
-                                    data={inputRow}
-                                    key={field}
-                                />] :
-                                [''];
-                        case "dropdown" :
-                            return <ContactFormDropdownItem data={inputRow} key={field} />;
-                        case "button" :
-                            return <ContactFormButtonItem data={inputRow} key={field} />
-                        default:
                             return <ContactFormInputItem
-                                data={inputRow}
+                                data={this.getFieldByName(field)}
                                 key={field}
-                                hiddenField={this.state.hiddenField}
-                                isFieldHidden={this.isFieldHidden}
+                                value={this.getValueByFieldName(field).value}
+                                onChangeValue={this.handleChangeInput}
+                                isRequired={required}
+                                validationType={
+                                    this.getValidationTypeByFieldName(field) ? this.getValidationTypeByFieldName(field) :
+                                        null}
+                            />;
+                        case "address" :
+                            return <ContactFormAddressItem
+                                data={this.getFieldByName(field)}
+                                key={field}
+                                value={this.getValueByFieldName(field).value}
+                                onChangeValue={this.handleChangeInput}
+                                isRequired={this.getFieldValidationStatusByName(field)}
+                            />;
+                        case "address-conditional" :
+                            return this.state.isHidden ?
+                                [<ContactFormAddressItem
+                                    data={this.getFieldByName(field)}
+                                    key={field}
+                                    value={this.getValueByFieldName(field).value}
+                                    onChangeValue={this.handleChangeInput}
+                                    isHidden={this.state.isHidden}
+                                />] : [];
+                        case "dropdown" :
+                            return <ContactFormDropdownItem
+                                data={this.getFieldByName(field)}
+                                key={field}
+                                value={this.getValueByFieldName(field).value}
+                                isRequired={this.getFieldValidationStatusByName(field)}
+                            />;
+                        case "button" :
+                            return <ContactFormButtonItem
+                                data={this.getFieldByName(field)}
+                                buttonId={field}
+                                key={field}
+                            />;
+                        default: //checkboxes and radio-buttons
+                            return <ContactFormInputItem
+                                data={this.getFieldByName(field)}
+                                key={field}
+                                hiddenField={this.state.isHidden}
                                 onChangeValue={this.handleChangeValue}
+                                value={this.getValueByFieldName(field).value}
+                                isRequired={this.isFieldRequired(field)}
                             />;
                     }
                 }

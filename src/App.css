@@ -1,19 +1,63 @@
 .App {
-  text-align: center;
+  margin: auto;
+  max-width: 680px;
+}
+form {
+  width: 100%;
+}
+.form-container {
+  font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  width: auto;
+}
+.col-5 {
+  display: flex;
+  text-align: right;
+  justify-content: center;
+  flex-direction: column;
+}
+#saveBtn {
+  border-radius: 20px;
+  border: 1px solid #ccc;
+  line-height: 30px;
+  width: 15em;
+  background-color: plum;
+}
+input[type="text"], select, .Select-control {
+  border-radius: 20px !important;
+  border: 1px solid #ccc;
+  line-height: 30px;
+  outline: none;
+  width: 95%;
+  padding-left: 1.4em;
+
+}
+.submitForm {
+  justify-content: flex-end;
 }
 
-
-.App-header {
-  background-color: #222;
-  height: 150px;
-  padding: 20px;
-  color: white;
+.errorMessage {
+  color: red;
+  margin: 0;
+  margin-top: -10px;
+}
+.errorMessage-checkbox {
+  margin-top: 0;
 }
 
-.App-title {
-  font-size: 1.5em;
+@media (max-width: 48em) {
+  label.to-right {
+    text-align: left;
+  }
+  .submitForm {
+    margin-right: 9%;
+  }
 }
-
-.App-intro {
-  font-size: large;
+@media (max-width: 42em) {
+  label, .errorMessage {
+    margin-left: 20px;
+  }
+  input, select, .Select {
+    margin-left: 20px;
+  }
 }

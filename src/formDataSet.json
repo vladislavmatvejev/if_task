@@ -1,0 +1,78 @@
+[{
+    "field": "fullname",
+    "title": "Ees- ja perenimi",
+    "type": "text",
+    "_isRequired": true
+  },
+  {
+    "field": "phone-number",
+    "title": "Telefon",
+    "type": "text",
+    "_isRequired": true,
+    "validation": [
+      {
+        "type": "number"
+      },
+      {
+        "type": "oneOfTwo",
+        "siblingField": "email"
+      }
+    ]
+  },
+  {
+    "field": "email",
+    "title": "E-post",
+    "type": "text",
+    "_isRequired": true,
+    "validation": [
+      {
+        "type": "email"
+      },
+      {
+        "type": "oneOfTwo",
+        "siblingField": "phone-number"
+      }
+    ]
+  },
+  {
+    "field": "address-person",
+    "type": "address",
+    "_isRequired": true
+  },
+  {
+    "field": "different-address",
+    "type": "radio",
+    "options": [
+      {
+        "text": "Kohaletometamine sama aadressile",
+        "value": false
+      },
+      {
+        "text": "Kohaletometamine erinevale aadressile",
+        "value": true
+      }
+    ],
+    "defaultValue": false
+  },
+  {
+    "field": "physical-address",
+    "type": "address-conditional"
+  },
+  {
+    "field": "terms",
+    "type": "checkbox",
+    "options": [
+      {
+        "text": "Olen tingimustega tutvunud",
+        "value": true
+      }
+    ],
+    "_isRequired": true,
+    "defaultValue": false
+  },
+  {
+    "field": "saveBtn",
+    "title": "Salvesta",
+    "type": "button"
+  }
+]
