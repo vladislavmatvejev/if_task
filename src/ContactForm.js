@@ -4,14 +4,27 @@ import ContactFormInputItem from './ContactFormInputItem';
 import ContactFormAddressItem from './ContactFormAddressItem';
 import ContactFormDropdownItem from './ContactFormDropdownItem';
 import ContactFormButtonItem from './ContactFormButtonItem';
+import {validateField} from './Validation/ValidateFields';
 import formDataSet from './formDataSet.json';
 
 function setInitialValues(data) {
     return data.filter(fields => fields.field && fields.type !== 'button')
         .map(field => {
             return field.field === 'address-person' || field.field === 'physical-address' ?
-                {[field.field]: {value: {address: '', alevik: '', city: ''}}} :
-                {[field.field]: {value: '' || field.defaultValue}};
+                {
+                    [field.field]: {
+                        value: {address: '', alevik: '', city: ''},
+                        validationString: field.field === 'address-person' ? 'required' : 'valid',
+                        sibling: field.siblingField ? field.siblingField : null
+                    }
+                } :
+                {
+                    [field.field]: {
+                        value: field.defaultValue !== undefined ? field.defaultValue : '',
+                        validationString: field.validation ? 'required' : 'valid',
+                        sibling: field.siblingField ? field.siblingField : null
+                    }
+                };
         });
 }
 
@@ -19,19 +32,11 @@ function setInitialStateForRequired(data) {
     return data.map(field => {
         return {[field.field]:
             {
-                isValid: !field._isRequired ,
+                isValid: false,
                 validationType: field.validation ? field.validation : null
             }
         };
     })
-}
-
-function getRequiredFields(data) {
-    return data
-        .filter(required => required._isRequired)
-        .map(field => {
-            return field.field;
-        });
 }
 
 export default class ContactForm extends Component {
@@ -41,32 +46,59 @@ export default class ContactForm extends Component {
 
         this.state = {
             formData: _.clone(data),
-            requiredFields: getRequiredFields(data),
             values: setInitialValues(data),
             isHidden: false,
             fieldValidation: setInitialStateForRequired(data),
             isFormValid: false
         };
+
+        this.changeValidationStatus = this.changeValidationStatus.bind(this);
+        this.handleChangeInput = this.handleChangeInput.bind(this);
+        this.handleChangeValue = this.handleChangeValue.bind(this);
+        this.checkIfFormIsValid = this.checkIfFormIsValid.bind(this);
+        this.getValidationSiblingByFieldName = this.getValidationSiblingByFieldName.bind(this);
+        this.getValidationTypeByFieldName = this.getValidationTypeByFieldName.bind(this);
+        this.getFieldValidationStatusByName = this.getFieldValidationStatusByName.bind(this);
+        this.getFieldByName = this.getFieldByName.bind(this);
+        this.getValueFieldByFieldName = this.getValueFieldByFieldName.bind(this);
+        this.updateStateObject = this.updateStateObject.bind(this);
+        this.isFieldRequired = this.isFieldRequired.bind(this);
+        this.getValidatorsByField = this.getValidatorsByField.bind(this);
+        this.validateFieldByName = this.validateFieldByName.bind(this);
+        this.updateFieldValidationStatusByName = this.updateFieldValidationStatusByName.bind(this);
     }
+
+    getValidatorsByField = (fieldName) => {
+        return this.state.formData.find(field => field.field === fieldName).validation;
+    };
+
+    validateFieldByName = (fieldValue, fieldName) => {
+        let validationString;
+
+        this.getValidatorsByField(fieldName).some(validator => {
+            let validationValue = validator.value ? validator.value : null;
+            validationString = validateField(validator.type, fieldValue, validationValue);
+            if (validationString !== 'valid') {
+                return true;
+            }
+
+            return false;
+        });
+
+        return validationString;
+    };
 
     checkIfFormIsValid() {
-        console.log(this.state.fieldValidation);
-        return this.state.fieldValidation;
-    }
-
-    changeValidationStatus = (fieldName, fieldValue, fieldStatus) => {
-        let fieldVal = fieldValue !== '';
-        let isValid = typeof(fieldStatus) !== 'undefined' ? fieldStatus : fieldVal;
-        return this.state.fieldValidation.map(field => {
-            return _.has(field, fieldName) ?
-                {
-                    [fieldName]:
-                        {
-                            isValid: isValid,
-                            validationType: this.getValidationTypeByFieldName(fieldName)
-                        }
-                } : field;
+        let allFields = this.state.formData.map(value => value.field);
+        _.remove(allFields, (x) => x === 'saveBtn');
+        let validations = allFields.map(field => {
+            let f = this.state.values.find(value => {
+                return _.has(value, field);
+            });
+            return f[field].validationString;
         });
+        console.log(_.without(validations, 'valid'));
+        return _.without(validations, 'valid').length === 0;
     };
 
     getValidationTypeByFieldName(fieldName) {
@@ -76,7 +108,7 @@ export default class ContactForm extends Component {
     }
 
     getValidationSiblingByFieldName(fieldName) {
-        let siblingField = this.getValidationTypeByFieldName(fieldName) !== null ?
+        let siblingField = this.getValidationTypeByFieldName(fieldName)[1].siblingField !== null ?
             this.getValidationTypeByFieldName(fieldName)[1].siblingField : null;
         return siblingField;
     }
@@ -91,29 +123,91 @@ export default class ContactForm extends Component {
         return this.state.formData.find(field => field.field === fieldName);
     }
 
-    getValueByFieldName(fieldName) {
+    getValueFieldByFieldName(fieldName) {
         return this.state.values.find(field => {
-            return field[fieldName]
+            return _.has(field, fieldName);
         })[fieldName];
     }
 
+    clearSiblingValidationStatus = (fieldName) => {
+        return this.updateFieldValidationStatusByName(fieldName, 'required');
+    };
+
+    updateFieldValidationStatusByName = (fieldName, validationStatus) => {
+        let newState = this.state.values.map(field => {
+            return _.has(field, fieldName) ? field[fieldName].validationString = validationStatus : field;
+        });
+        return this.setState(
+            {
+                values: newState
+        });
+    };
+
     updateStateObject(fieldName, fieldValue) {
+        let validationString = fieldName !== 'different-address' ?
+            this.validateFieldByName(fieldValue, fieldName) :
+            'valid';
+        let sibling = this.getValueFieldByFieldName(fieldName).sibling;
+
+        if (sibling) {
+            let siblingValidtionStatus = this.getValueFieldByFieldName(sibling).validationString;
+            if (validationString === 'valid' && siblingValidtionStatus !== 'valid') {
+                this.updateFieldValidationStatusByName(sibling, validationString);
+            } else if (validationString === 'required') {
+                this.updateFieldValidationStatusByName(sibling, validationString);
+            } else if (validationString !== 'valid' && siblingValidtionStatus === 'valid') {
+                this.updateFieldValidationStatusByName(sibling, siblingValidtionStatus);
+            } else if (validationString === 'required' && siblingValidtionStatus === 'valid') {
+                this.updateFieldValidationStatusByName(sibling, siblingValidtionStatus);
+            }
+        }
         return this.state.values.map(fields => {
             return _.has(fields, fieldName) ?
-                {[fieldName]: {value: fieldValue}} :
+                {[fieldName]:
+                    {
+                        value: fieldValue,
+                        validationString: validationString,
+                        sibling: sibling
+                    }
+                } :
                 fields;
         });
     }
 
     isFieldRequired(fieldName) {
-        return _.includes(this.state.requiredFields, fieldName);
+        let field =  this.state.fieldValidation
+            .find(field => {
+                return _.has(field, fieldName);
+            })[fieldName].validationType;
+        return field !== null ? _.includes(field[0], "required") : false;
+    };
+
+    changeValidationStatus = (fieldName, fieldValue, fieldStatus) => {
+        let fieldVal = fieldValue !== '';
+        let isValid = fieldStatus !== undefined ? fieldStatus : fieldVal;
+        return this.state.fieldValidation.map(field => {
+            return _.has(field, fieldName) ?
+                {
+                    [fieldName]:
+                        {
+                            isValid: isValid,
+                            validationType: this.getValidationTypeByFieldName(fieldName)
+                        }
+                } : field;
+        });
     };
 
     handleChangeValue = (fieldValue, fieldName) => {
+        let checkValue = JSON.parse(fieldValue);
+        if (fieldName === 'different-address' && checkValue) {
+            this.updateFieldValidationStatusByName('physical-address', 'required');
+        } else if (fieldName === 'different-address' && !checkValue) {
+            this.updateFieldValidationStatusByName('physical-address', 'valid');
+        }
         let newState = this.updateStateObject(fieldName, fieldValue);
         this.setState(
             {
-                isHidden: fieldName === 'terms' ? this.state.isHidden : JSON.parse(fieldValue),
+                isHidden: fieldName === 'terms' ? this.state.isHidden : checkValue,
                 values: newState
             }
         );
@@ -126,12 +220,13 @@ export default class ContactForm extends Component {
                 values: newValueState,
                 fieldValidation: newValidationState
             }
-            );
+        );
     };
 
     render() {
-        this.checkIfFormIsValid();
         let data = this.state.formData || "";
+        console.log(this.state);
+        console.log(!this.checkIfFormIsValid());
         let menuContent;
         if (data.length === 0) {
             menuContent = (
@@ -142,42 +237,34 @@ export default class ContactForm extends Component {
                 </div>
             );
         } else {
-            menuContent = data.map((inputRow, index) =>
+            menuContent = data.map((inputRow) =>
                 {
                     let field = inputRow.field;
-                    let sibling = this.getValidationSiblingByFieldName(field);
-                    let siblindStatus = sibling ? this.getFieldValidationStatusByName(sibling) : null;
-                    let validationStatus = this.getFieldValidationStatusByName(field);
-                    let required = siblindStatus !== null ?
-                        siblindStatus :
-                        validationStatus;
-                    //console.log(field, required, siblindStatus);
                     switch (inputRow.type) {
                         case "text" :
                             return <ContactFormInputItem
                                 data={this.getFieldByName(field)}
                                 key={field}
-                                value={this.getValueByFieldName(field).value}
+                                value={this.getValueFieldByFieldName(field).value}
+                                validationString={this.getValueFieldByFieldName(field).validationString}
+                                isValid={this.getValueFieldByFieldName(field).isValid}
                                 onChangeValue={this.handleChangeInput}
-                                isRequired={required}
-                                validationType={
-                                    this.getValidationTypeByFieldName(field) ? this.getValidationTypeByFieldName(field) :
-                                        null}
                             />;
                         case "address" :
                             return <ContactFormAddressItem
                                 data={this.getFieldByName(field)}
                                 key={field}
-                                value={this.getValueByFieldName(field).value}
+                                value={this.getValueFieldByFieldName(field).value}
+                                isValid={this.getValueFieldByFieldName(field).isValid}
                                 onChangeValue={this.handleChangeInput}
-                                isRequired={this.getFieldValidationStatusByName(field)}
                             />;
                         case "address-conditional" :
                             return this.state.isHidden ?
                                 [<ContactFormAddressItem
                                     data={this.getFieldByName(field)}
                                     key={field}
-                                    value={this.getValueByFieldName(field).value}
+                                    value={this.getValueFieldByFieldName(field).value}
+                                    isValid={this.getValueFieldByFieldName(field).isValid}
                                     onChangeValue={this.handleChangeInput}
                                     isHidden={this.state.isHidden}
                                 />] : [];
@@ -185,12 +272,14 @@ export default class ContactForm extends Component {
                             return <ContactFormDropdownItem
                                 data={this.getFieldByName(field)}
                                 key={field}
-                                value={this.getValueByFieldName(field).value}
-                                isRequired={this.getFieldValidationStatusByName(field)}
+                                value={this.getValueFieldByFieldName(field).value}
+                                validationString={this.getValueFieldByFieldName(field).validationString}
+                                isValid={this.getValueFieldByFieldName(field).isValid}
                             />;
                         case "button" :
                             return <ContactFormButtonItem
                                 data={this.getFieldByName(field)}
+                                disabled={!this.checkIfFormIsValid()}
                                 buttonId={field}
                                 key={field}
                             />;
@@ -200,8 +289,9 @@ export default class ContactForm extends Component {
                                 key={field}
                                 hiddenField={this.state.isHidden}
                                 onChangeValue={this.handleChangeValue}
-                                value={this.getValueByFieldName(field).value}
-                                isRequired={this.isFieldRequired(field)}
+                                value={this.getValueFieldByFieldName(field).value}
+                                validationString={this.getValueFieldByFieldName(field).validationString}
+                                isValid={this.getValueFieldByFieldName(field).isValid}
                             />;
                     }
                 }

@@ -12,6 +12,7 @@ export default class ContactFormDropdownItem extends Component {
             selectValue: '',
             isRequired: this.props.isRequired
         }
+        this.updateValue = this.updateValue.bind(this);
     }
     updateValue(newValue) {
         this.setState({
@@ -49,6 +50,7 @@ export default class ContactFormDropdownItem extends Component {
                     childClass={data.type}
                     fieldName={label}
                     isRequired={this.state.isRequired}
+                    validationString={this.props.validationString}
                 />
             </div>
         </div>;

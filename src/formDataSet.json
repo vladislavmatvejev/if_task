@@ -2,42 +2,48 @@
     "field": "fullname",
     "title": "Ees- ja perenimi",
     "type": "text",
-    "_isRequired": true
+    "validation" : [
+      {
+        "type": "required"
+      }
+    ]
   },
   {
     "field": "phone-number",
     "title": "Telefon",
     "type": "text",
-    "_isRequired": true,
     "validation": [
       {
-        "type": "number"
+        "type": "required"
       },
       {
-        "type": "oneOfTwo",
-        "siblingField": "email"
+        "type": "number"
       }
-    ]
+    ],
+    "siblingField": "email"
   },
   {
     "field": "email",
     "title": "E-post",
     "type": "text",
-    "_isRequired": true,
     "validation": [
       {
-        "type": "email"
+        "type": "required"
       },
       {
-        "type": "oneOfTwo",
-        "siblingField": "phone-number"
+        "type": "email"
       }
-    ]
+    ],
+    "siblingField": "phone-number"
   },
   {
     "field": "address-person",
     "type": "address",
-    "_isRequired": true
+    "validation" : [
+      {
+        "type": "required"
+      }
+    ]
   },
   {
     "field": "different-address",
@@ -56,7 +62,12 @@
   },
   {
     "field": "physical-address",
-    "type": "address-conditional"
+    "type": "address-conditional",
+    "validation" : [
+      {
+        "type": "required"
+      }
+    ]
   },
   {
     "field": "terms",
@@ -67,7 +78,11 @@
         "value": true
       }
     ],
-    "_isRequired": true,
+    "validation" : [
+      {
+        "type": "required"
+      }
+    ],
     "defaultValue": false
   },
   {

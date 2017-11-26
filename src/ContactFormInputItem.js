@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import ErrorMessageItem from './Components/ErrorMessageItem';
-import {required} from './Validation/ValidateFields';
 
 export default class ContactFormInputItem extends Component {
     constructor(props) {
@@ -11,14 +10,12 @@ export default class ContactFormInputItem extends Component {
             isRequired: false,
             isInputValid: this.props.validationType ? this.props.validationType : true
         };
-    }
-    componentDidMount() {
-        this.setState({isRequired: this.props.isRequired});
+        this.inputChangeValue = this.inputChangeValue.bind(this);
     }
 
     inputChangeValue = (fieldValue, field) => {
         this.props.onChangeValue(fieldValue, field);
-        this.setState({isRequired: required(fieldValue)});
+        this.setState({inputValue: fieldValue});
     };
 
     render() {
@@ -74,6 +71,7 @@ export default class ContactFormInputItem extends Component {
                                         childClass={type}
                                         fieldName={option.text}
                                         isRequired={this.state.isRequired}
+                                        validationString={this.props.validationString}
                                     />
                                 </div>
                             </div>
@@ -104,6 +102,7 @@ export default class ContactFormInputItem extends Component {
                             childClass={type}
                             fieldName={title}
                             isRequired={this.state.isRequired}
+                            validationString={this.props.validationString}
                         />
                     </div>
                 </div>;
