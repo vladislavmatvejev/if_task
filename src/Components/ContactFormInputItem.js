@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import ErrorMessageItem from './Components/ErrorMessageItem';
+import ErrorMessageItem from './ErrorMessageItem';
 
 export default class ContactFormInputItem extends Component {
     constructor(props) {

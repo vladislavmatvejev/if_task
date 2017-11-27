@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
-import ErrorMessageItem from './Components/ErrorMessageItem';
+import ErrorMessageItem from './ErrorMessageItem';
 import DropDown from 'react-select';
-import {required} from './Validation/ValidateFields';
-import '../node_modules/react-select/dist/react-select.css';
+import {required} from '../Validation/ValidateFields';
+import '../../node_modules/react-select/dist/react-select.css';
 
 export default class ContactFormDropdownItem extends Component {
     constructor(props) {

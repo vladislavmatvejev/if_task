@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import _ from 'lodash';
 import ContactFormInputItem from './ContactFormInputItem';
 import ContractFormDropdownItem from './ContactFormDropdownItem';
-import {validateField} from './Validation/ValidateFields';
+import {validateField} from '../Validation/ValidateFields';
 
 export default class ContactFormAddressItem extends Component {
 
@@ -82,14 +82,16 @@ export default class ContactFormAddressItem extends Component {
         let fieldName = this.getFieldName(field);
         let validationString;
 
-        this.getValidatorsByField(fieldName).some(validator => {
-            let validationValue = validator.value ? validator.value : null;
-            validationString = validateField(validator.type, fieldValue, validationValue);
-            if (validationString !== 'valid') {
-                return true;
-            }
-            return false;
-        });
+        if(this.getValidatorsByField(fieldName)){
+            this.getValidatorsByField(fieldName).some(validator => {
+                let validationValue = validator.value ? validator.value : null;
+                validationString = validateField(validator.type, fieldValue, validationValue);
+                if (validationString !== 'valid') {
+                    return true;
+                }
+                return false;
+            });
+        }
 
         let newState = this.state.values.map(fields => {
             fields[fieldName].value = fieldValue;

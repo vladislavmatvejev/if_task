@@ -1,11 +1,12 @@
 import React, { Component } from 'react';
+import { Redirect } from 'react-router-dom';
 import _ from 'lodash';
 import ContactFormInputItem from './ContactFormInputItem';
 import ContactFormAddressItem from './ContactFormAddressItem';
 import ContactFormDropdownItem from './ContactFormDropdownItem';
 import ContactFormButtonItem from './ContactFormButtonItem';
-import {validateField} from './Validation/ValidateFields';
-import formDataSet from './formDataSet.json';
+import {validateField} from '../Validation/ValidateFields';
+import formDataSet from '../formDataSet.json';
 
 function setInitialValues(data) {
     return data.filter(fields => fields.field && fields.type !== 'button')
@@ -13,6 +14,7 @@ function setInitialValues(data) {
             return field.field === 'address-person' || field.field === 'physical-address' ?
                 {
                     [field.field]: {
+                        title: field.title,
                         value: {address: '', alevik: '', city: ''},
                         validationString: field.field === 'address-person' ? 'required' : 'valid',
                         sibling: field.siblingField ? field.siblingField : null
@@ -20,6 +22,7 @@ function setInitialValues(data) {
                 } :
                 {
                     [field.field]: {
+                        title: field.title,
                         value: field.defaultValue !== undefined ? field.defaultValue : '',
                         validationString: field.validation ? 'required' : 'valid',
                         sibling: field.siblingField ? field.siblingField : null
@@ -40,8 +43,8 @@ function setInitialStateForRequired(data) {
 }
 
 export default class ContactForm extends Component {
-    constructor(){
-        super();
+    constructor(props){
+        super(props);
         const data = JSON.parse(JSON.stringify(formDataSet));
 
         this.state = {
@@ -49,7 +52,8 @@ export default class ContactForm extends Component {
             values: setInitialValues(data),
             isHidden: false,
             fieldValidation: setInitialStateForRequired(data),
-            isFormValid: false
+            isFormValid: false,
+            submitForm: false
         };
 
         this.changeValidationStatus = this.changeValidationStatus.bind(this);
@@ -64,6 +68,7 @@ export default class ContactForm extends Component {
         this.getValidatorsByField = this.getValidatorsByField.bind(this);
         this.validateFieldByName = this.validateFieldByName.bind(this);
         this.updateFieldValidationStatusByName = this.updateFieldValidationStatusByName.bind(this);
+        this.submitForm = this.submitForm.bind(this);
     }
 
     getValidatorsByField = (fieldName) => {
@@ -152,6 +157,7 @@ export default class ContactForm extends Component {
             return _.has(fields, fieldName) ?
                 {[fieldName]:
                     {
+                        title: fields[fieldName].title,
                         value: fieldValue,
                         validationString: validationString,
                         sibling: sibling
@@ -200,6 +206,10 @@ export default class ContactForm extends Component {
                 fieldValidation: newValidationState
             }
         );
+    };
+    submitForm = (e) => {
+        e.preventDefault();
+        this.setState({ submitForm: true });
     };
 
     render() {
@@ -272,6 +282,16 @@ export default class ContactForm extends Component {
             );
         }
 
-        return [menuContent];
+        const { submitForm } = this.state;
+
+        return <div className="grid" key="form-container">
+            {submitForm ? (
+                    <Redirect to={{pathname: '/read-only', state:{referrer: this.state.values}}}/>
+                ) : (
+                    <form onSubmit={this.submitForm}>
+                        {menuContent}
+                    </form>
+                )}
+                </div>;
     }
 }
