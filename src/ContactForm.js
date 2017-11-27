@@ -58,11 +58,9 @@ export default class ContactForm extends Component {
         this.checkIfFormIsValid = this.checkIfFormIsValid.bind(this);
         this.getValidationSiblingByFieldName = this.getValidationSiblingByFieldName.bind(this);
         this.getValidationTypeByFieldName = this.getValidationTypeByFieldName.bind(this);
-        this.getFieldValidationStatusByName = this.getFieldValidationStatusByName.bind(this);
         this.getFieldByName = this.getFieldByName.bind(this);
         this.getValueFieldByFieldName = this.getValueFieldByFieldName.bind(this);
         this.updateStateObject = this.updateStateObject.bind(this);
-        this.isFieldRequired = this.isFieldRequired.bind(this);
         this.getValidatorsByField = this.getValidatorsByField.bind(this);
         this.validateFieldByName = this.validateFieldByName.bind(this);
         this.updateFieldValidationStatusByName = this.updateFieldValidationStatusByName.bind(this);
@@ -97,7 +95,6 @@ export default class ContactForm extends Component {
             });
             return f[field].validationString;
         });
-        console.log(_.without(validations, 'valid'));
         return _.without(validations, 'valid').length === 0;
     };
 
@@ -113,12 +110,6 @@ export default class ContactForm extends Component {
         return siblingField;
     }
 
-    getFieldValidationStatusByName(fieldName) {
-        return !this.state.fieldValidation.find(field => {
-            return _.has(field, fieldName);
-        })[fieldName].isValid;
-    }
-
     getFieldByName(fieldName) {
         return this.state.formData.find(field => field.field === fieldName);
     }
@@ -128,10 +119,6 @@ export default class ContactForm extends Component {
             return _.has(field, fieldName);
         })[fieldName];
     }
-
-    clearSiblingValidationStatus = (fieldName) => {
-        return this.updateFieldValidationStatusByName(fieldName, 'required');
-    };
 
     updateFieldValidationStatusByName = (fieldName, validationStatus) => {
         let newState = this.state.values.map(field => {
@@ -173,14 +160,6 @@ export default class ContactForm extends Component {
                 fields;
         });
     }
-
-    isFieldRequired(fieldName) {
-        let field =  this.state.fieldValidation
-            .find(field => {
-                return _.has(field, fieldName);
-            })[fieldName].validationType;
-        return field !== null ? _.includes(field[0], "required") : false;
-    };
 
     changeValidationStatus = (fieldName, fieldValue, fieldStatus) => {
         let fieldVal = fieldValue !== '';
@@ -225,8 +204,6 @@ export default class ContactForm extends Component {
 
     render() {
         let data = this.state.formData || "";
-        console.log(this.state);
-        console.log(!this.checkIfFormIsValid());
         let menuContent;
         if (data.length === 0) {
             menuContent = (
@@ -247,7 +224,6 @@ export default class ContactForm extends Component {
                                 key={field}
                                 value={this.getValueFieldByFieldName(field).value}
                                 validationString={this.getValueFieldByFieldName(field).validationString}
-                                isValid={this.getValueFieldByFieldName(field).isValid}
                                 onChangeValue={this.handleChangeInput}
                             />;
                         case "address" :
@@ -274,7 +250,6 @@ export default class ContactForm extends Component {
                                 key={field}
                                 value={this.getValueFieldByFieldName(field).value}
                                 validationString={this.getValueFieldByFieldName(field).validationString}
-                                isValid={this.getValueFieldByFieldName(field).isValid}
                             />;
                         case "button" :
                             return <ContactFormButtonItem
@@ -291,7 +266,6 @@ export default class ContactForm extends Component {
                                 onChangeValue={this.handleChangeValue}
                                 value={this.getValueFieldByFieldName(field).value}
                                 validationString={this.getValueFieldByFieldName(field).validationString}
-                                isValid={this.getValueFieldByFieldName(field).isValid}
                             />;
                     }
                 }
